@@ -933,7 +933,7 @@ class Ui_MainWindow(QMainWindow):
                 df_sosFileMerge = df_sosFileMerge.reset_index(drop=True)
                 
                 #대표모델 Column 생성 (9자리 자르기)
-                df_sosFileMerge['대표모델'] = df_sosFileMerge['MS Code'].str[:9]
+                df_sosFileMerge['대표모델'] = df_sosFileMerge['MS Code'].str[:9]-.0
                 #남은 워킹데이 Column 생성
                 df_sosFileMerge['남은 워킹데이'] = 0
                 #긴급오더, 홀딩오더 Linkage Number Column 타입 일치
