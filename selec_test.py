@@ -26,6 +26,15 @@ s_max = int(30)
 #
 for i in df_Other.index:
     if df_Other['ATE_NO'][i] == 'F':
+        leftover_cnt = int(df_Other['미착공수주잔'][i])
+        if f_max - leftover_cnt < 0:
+            df_Other['확정수량'][i] == leftover_cnt
+            f_max =
+            #max 값을 설정하려면 변수를 조건절 밖으로 꺼내야 한다.
+        else:
+            df_Other['확정수량'][i] == f_max
+            break
+
         
 
     
