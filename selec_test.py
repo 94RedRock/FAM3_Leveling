@@ -18,8 +18,16 @@ df_sosAddMainModel = pd.read_excel(r'd:\\python_test\\flow9.xlsx')
 df_OtherDropSEQ = df_sosAddMainModel[df_sosAddMainModel['PRODUCT_TYPE']=='OTHER']
 df_Other = df_OtherDropSEQ.reset_index(drop=True)
 
+f_max = int(50)
+v_max = int(50)
+fv_max = int(100)
+s_max = int(30)
+
 #
-if df_Other['미착공수주잔'] =
+for i in df_Other.index:
+    if df_Other['ATE_NO'][i] == 'F':
+        
+
     
 if 'product_type' == other:
 
