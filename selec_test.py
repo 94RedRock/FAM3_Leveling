@@ -23,7 +23,8 @@ v_max = int(50)
 fv_max = int(100)
 s_max = int(30)
 
-#
+f_max_cnt
+#커밋 test
 for i in df_Other.index:
     if df_Other['ATE_NO'][i] == 'F':
         leftover_cnt = int(df_Other['미착공수주잔'][i])
