@@ -764,7 +764,8 @@ class Ui_MainWindow(QMainWindow):
                         calendarFilePath, 
                         smtAssyFilePath, 
                         secMainListFilePath, 
-                        inspectFacFilePath]
+                        inspectFacFilePath,
+                        conditionFilePath]
 
             for path in pathList:
                 if os.path.exists(path):
@@ -1201,7 +1202,7 @@ class Ui_MainWindow(QMainWindow):
                                 df_addSmtAssy['SMT반영_잔여_착공량'][i] = df_addSmtAssy['평준화_적용_착공량'][i]
 
 
-                df_addSmtAssy.to_excel(r'd:\\FAM3_Leveling\\flow11.xlsx')
+                # df_addSmtAssy.to_excel(r'd:\\FAM3_Leveling\\flow11.xlsx')
                 df_addSmtAssy['임시수량'] = 0
                 df_addSmtAssy['설비능력반영_착공량'] = 0
                 
@@ -1265,54 +1266,96 @@ class Ui_MainWindow(QMainWindow):
 
                 # df_addSmtAssy.to_excel(r'd:\\FAM3_Leveling-1\\flow12.xlsx')
 
-                df_addSmtAssy['대표모델별_누적착공량'] = ''
-                dict_integAteCnt = {}
-                for i in df_addSmtAssy.index:
-                    if df_addSmtAssy['대표모델'][i] in dict_integAteCnt:
-                        dict_integAteCnt[df_addSmtAssy['대표모델'][i]] += int(df_addSmtAssy['설비능력반영_착공량'][i])
-                    else:
-                        dict_integAteCnt[df_addSmtAssy['대표모델'][i]] = int(df_addSmtAssy['설비능력반영_착공량'][i])
-                    df_addSmtAssy['대표모델별_누적착공량'][i] = dict_integAteCnt[df_addSmtAssy['대표모델'][i]]
+                # df_addSmtAssy['대표모델별_누적착공량'] = ''
+                # dict_integAteCnt = {}
+                # for i in df_addSmtAssy.index:
+                #     if df_addSmtAssy['대표모델'][i] in dict_integAteCnt:
+                #         dict_integAteCnt[df_addSmtAssy['대표모델'][i]] += int(df_addSmtAssy['설비능력반영_착공량'][i])
+                #     else:
+                #         dict_integAteCnt[df_addSmtAssy['대표모델'][i]] = int(df_addSmtAssy['설비능력반영_착공량'][i])
+                #     df_addSmtAssy['대표모델별_누적착공량'][i] = dict_integAteCnt[df_addSmtAssy['대표모델'][i]]
 
-                for key, value in dict_minContCnt.items():
-                    if key in dict_integAteCnt:
-                        if value[0] > dict_integAteCnt[key]:
-                            logging.warning('「%s」 사양이 「완성지정일: %s」 까지 오늘 「착공수량: %i 대」로는 착공량 부족이 예상됩니다. 최소 필요 착공량은 「%i 대」 입니다.', 
-                                key, 
-                                str(value[1]),
-                                dict_integAteCnt[key],
-                                math.ceil(value[0]))      
+                # for key, value in dict_minContCnt.items():
+                #     if key in dict_integAteCnt:
+                #         if value[0] > dict_integAteCnt[key]:
+                #             logging.warning('「%s」 사양이 「완성지정일: %s」 까지 오늘 「착공수량: %i 대」로는 착공량 부족이 예상됩니다. 최소 필요 착공량은 「%i 대」 입니다.', 
+                #                 key, 
+                #                 str(value[1]),
+                #                 dict_integAteCnt[key],
+                #                 math.ceil(value[0]))      
 
-                df_addSmtAssy.to_excel('.\\debug\\flow13.xlsx')
+                # df_addSmtAssy.to_excel('.\\debug\\flow13.xlsx')
                 #HSJ 상기 누적 착공량을 계산해야 하는 이유 = 공수 반영을 해야하기 때문, 하지만 상기 코드를 사용해도 될지는 아직 모름 
 
                 #HSJ 특수 기종 분류표 적용 start
                 df_addSmtAssy['착공 확정수량'] = 0
                 df_condition= pd.read_excel(list_masterFile[9]) #FAM3 기종 분류표 불러오기
                 #1차 2차 카운트 위한 dict
-                dict_firstMaxCnt = {} #1차 MAX - 기종 분류표 공통으로 사용되도록 해야한다.
-                dict_secondMaxCnt = {}  #2차 MAX - 기종 분류표 공통으로 사용되도록 해야한다.
-                dict_capableCnt = {} #공수
+                # dict_firstMaxCnt = {} #1차 MAX - 기종 분류표 공통으로 사용되도록 해야한다.
+                # dict_secondMaxCnt = {}  #2차 MAX - 기종 분류표 공통으로 사용되도록 해야한다.
+                # dict_capableCnt = {} #공수
                 dict_capableCnt[df_condition['MODEL'][i]] = df_condition['공수'][i] #로딩대수 - 공수 작업을 하기 위한 MODEL 별 공수 매칭
+                print(dict_capableCnt[df_condition['MODEL'][i]])
                 #null 값이나 빈값이면 위 참조
                 dict_capableCnt = defaultdict(list) #k
                 dict_firstMaxCnt = defaultdict(list) #k
-                dict_secondMaxCnt = defaultdict(list) #k
-                k = 1
-                for i in df_addSmtAssy.index:
-                    if df_addSmtAssy['PRODUCT_TYPE'][i] == 'OTHER':
-                        if df_condition['Model'] in df_addSmtAssy['MSCODE'][i]: #? 대표 형명이 기준 분류표 - model의 글자가 포함되어 있으면
-                        if df_addSmtAssy['MSCODE'][i] in str.find(df_condition['Model'][i]): #fam3 기종분류표 model에 mscode가 있으면
+                dict_secondMaxCnt = defaultdict(list) #k              
+                k = 0
+                # for i in df_addSmtAssy.index:
+                #     if df_addSmtAssy['PRODUCT_TYPE'][i] == 'OTHER':
+                #         if df_condition['Model'] in df_addSmtAssy['MSCODE'][i]: #? 대표 형명이 기준 분류표 - model의 글자가 포함되어 있으면
+                #         if df_addSmtAssy['MSCODE'][i] in str.find(df_condition['Model'][i]): #fam3 기종분류표 model에 mscode가 있으면
 
                 for i in df_condition.index:
                     dict_capableCnt[df_condition['MODEL'][i]] = df_condition['공수'][i]
-                    dict_firstMaxCnt[df_condition['1차_MAX'][i]] = df_condition['1차_MAX'][i]
-                    dict_secondMaxCnt[df_condition['2차_MAX'][i]] = df_condition['2차_MAX'][i]
-                    if df_condition['1차_MAX'] =='nan' or df_condition['1차_MAX'] == '':
+                    dict_firstMaxCnt[df_condition['No'][i]] = df_condition['1차_MAX'][i]
+                    dict_secondMaxCnt[df_condition['No'][i]] = df_condition['2차_MAX'][i]
+
+                    if df_condition['1차_MAX'] == 'nan' or df_condition['1차_MAX'] == '':
                         df_condition['1차_MAX'][i] = df_condition['1차_MAX'][i-1]
-                    if df_condition['2차_MAX'] =='nan' or df_condition['2차_MAX'] == '':
+
+                    if df_condition['2차_MAX'] == 'nan' or df_condition['2차_MAX'] == '':
                         df_condition['2차_MAX'][i] = df_condition['2차_MAX'][i-1]
+
+                    if df_condition['No'] == 'nan' or df_condition['No'] == '':
+                        df_condition['No'][i] = df_condition['No'][i-1]
                     
+                    if df_condition['2차_MAX'] == '-':
+                        dict_secondMaxCnt[df_condition['No'][i]] = int(9999)
+                    k += 1
+                
+                sp_loading = spOrderCnt #공수 계산용 sp_loading - 확정 수량
+                # 기종 분류표에 있는 경우 먼저
+                for i in df_addSmtAssy.index:
+                    for j in range(0,k):
+                        if df_condition['MODEL'][j] in df_addSmtAssy['대표모델'][i]: #
+                            if dict_secondMaxCnt[df_condition['No'][i]] > 0:
+                                if dict_firstMaxCnt[df_condition['No'][i]] > 0: #else는 first, second 전부 0
+                                    if dict_secondMaxCnt[df_condition['No'][i]] > dict_firstMaxCnt[df_condition['No'][i]]: #뭔가 이상함 1차와 2차가 같아지면
+                                        if dict_firstMaxCnt[df_condition['No'][i]] > df_addSmtAssy['SMT반영_착공량'][i]:
+                                            dict_firstMaxCnt[df_condition['No'][i]] -= df_addSmtAssy['SMT반영_착공량'][i]
+                                            df_addSmtAssy['착공 확정수량'] = df_addSmtAssy['SMT반영_착공량'][i]
+                                        else:
+                                            df_addSmtAssy['착공 확정수량'] = dict_firstMaxCnt[df_condition['No'][i]]
+                                            dict_firstMaxCnt[df_condition['No'][i]] = 0
+                                            dict_secondMaxCnt[df_condition['No'][i]] = 0
+                                    else:
+                                        if dict_secondMaxCnt[df_condition['No'][i]] > df_addSmtAssy['SMT반영_착공량'][i]:
+                                            dict_firstMaxCnt[df_condition['No'][i]] -= df_addSmtAssy['SMT반영_착공량'][i] #
+                                            dict_secondMaxCnt[df_condition['No'][i]] -= df_addSmtAssy['SMT반영_착공량'][i]
+                                            df_addSmtAssy['착공 확정수량'] = dict_firstMaxCnt[df_condition['No'][i]]
+                                            df_addSmtAssy['착공 확정수량'] = dict_secondMaxCnt[df_condition['No'][i]]
+                                        else:
+                                            df_addSmtAssy['착공 확정수량'] = dict_secondMaxCnt[df_condition['No'][i]]
+                                            dict_secondMaxCnt[df_condition['No'][i]] = 0
+                                else:
+                                    dict_secondMaxCnt[df_condition['No'][i]] = 0
+                                    dict_firstMaxCnt[df_condition['No'][i]] = 0
+
+
+
+
+
 
                         
 
