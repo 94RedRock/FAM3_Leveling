@@ -820,7 +820,53 @@ class Ui_MainWindow(QMainWindow):
                 return int(h) * 3600 + int(m) * 60 + int(s)
             else:
                 return 0
-
+        def Alarm_all(df_sum,df_det,div,msc,smt,amo,ate,niz_a,niz_m,msg,ln,oq,sq,pt,nt,ecd):
+            if str(div) == '1':
+                df_sum = df_sum.append({
+                    '분류' : str(div),
+                    'MS CODE' : '-',
+                    'SMT ASSY' : str(smt),
+                    '수량' : int(amo),
+                    '검사호기' : '-',
+                    '부족 대수(특수,Power)' : 0,
+                    '부족 시간(Main)' : 0,
+                    'Message' : str(msg)
+                    },ignore_index=True)
+            elif str(div) == '2':
+                df_sum = df_sum.append({
+                    '분류' : str(div),
+                    'MS CODE' : '-',
+                    'SMT ASSY' : '-',
+                    '수량' : '-',
+                    '검사호기' : str(ate),
+                    '부족 대수(특수,Power)' : int(niz_a),
+                    '부족 시간(Main)' : 0,
+                    'Message' : str(msg)
+                    },ignore_index=True)
+            elif str(div) == '기타':
+                df_sum = df_sum.append({
+                    '분류' : str(div),
+                    'MS CODE' : str(msc),
+                    'SMT ASSY' : '-',
+                    '수량' : '-',
+                    '검사호기' : '-',
+                    '부족 대수(특수,Power)' : 0,
+                    '부족 시간(Main)' : 0,
+                    'Message' : str(msg)
+                    },ignore_index=True)
+            df_det = df_det.append({
+                '분류':str(div),
+                'L/N': str(ln), 
+                'MS CODE' : str(msc), 
+                'SMT ASSY' : str(smt), 
+                '수주수량' : int(oq),
+                '부족수량' : int(sq), 
+                '검사호기' : str(ate), 
+                '대상 검사시간(초)' : int(pt), 
+                '필요시간(초)' : int(nt), 
+                '완성예정일' : ecd
+            },ignore_index=True)
+            return(df_sum,df_det)
         self.runBtn.setEnabled(False)   
         #pandas 경고없애기 옵션 적용
         pd.set_option('mode.chained_assignment', None)
@@ -1091,6 +1137,20 @@ class Ui_MainWindow(QMainWindow):
                                                                             False])
                 # df_addSmtAssy.to_excel(r'd:\\FAM3_Leveling\\flow10.xlsx') #hsj
 
+                #알람 부분
+                df_SMT_Alarm = pd.DataFrame(columns={'분류','MS CODE','SMT ASSY','수량','검사호기','부족 대수(특수,Power)','부족 시간(Main)','Message'},dtype=str)
+                df_SMT_Alarm['수량'] = df_SMT_Alarm['수량'] .astype(int)
+                df_SMT_Alarm['부족 시간(Main)'] =df_SMT_Alarm['부족 시간(Main)'].astype(int)
+                df_SMT_Alarm['부족 대수(특수,Power)'] =df_SMT_Alarm['부족 대수(특수,Power)'].astype(int)
+                df_SMT_Alarm = df_SMT_Alarm[['분류','MS CODE','SMT ASSY','수량','검사호기','부족 대수(특수,Power)','부족 시간(Main)','Message']]
+                df_Spcf_Alarm = pd.DataFrame(columns={'분류','L/N','MS CODE','SMT ASSY','수주수량','부족수량','검사호기','대상 검사시간(초)','필요시간(초)','완성예정일'},dtype=str)
+                df_Spcf_Alarm['수주수량'] = df_Spcf_Alarm['수주수량'] .astype(int)
+                df_Spcf_Alarm['부족수량'] =df_Spcf_Alarm['부족수량'].astype(int)
+                df_Spcf_Alarm['대상 검사시간(초)'] =df_Spcf_Alarm['대상 검사시간(초)'].astype(int)
+                df_Spcf_Alarm['필요시간(초)'] =df_Spcf_Alarm['필요시간(초)'].astype(int)
+                #df_Spcf_Alarm['완성예정일'] =df_Spcf_Alarm['완성예정일'].astype(datetime.datetime)
+                df_Spcf_Alarm = df_Spcf_Alarm[['분류','L/N','MS CODE','SMT ASSY','수주수량','부족수량','검사호기','대상 검사시간(초)','필요시간(초)','완성예정일']]
+                
                 rowCnt = 0
                 # df_addSmtAssy = df_addSmtAssy[df_addSmtAssy['PRODUCT_TYPE']=='MAIN'] #HSJ DEL
                 df_addSmtAssy = df_addSmtAssy[df_addSmtAssy['PRODUCT_TYPE']=='OTHER']
@@ -1105,6 +1165,7 @@ class Ui_MainWindow(QMainWindow):
                             if str(df_addSmtAssy[f'ROW{str(j)}'][i]) != '' and str(df_addSmtAssy[f'ROW{str(j)}'][i]) != 'nan':
                                 rowCnt = j
                             else:
+                                #ksm 알람
                                 break
                         smtFlag = False    
                         minCnt = 9999
@@ -1162,6 +1223,7 @@ class Ui_MainWindow(QMainWindow):
                                 if str(df_addSmtAssy[f'ROW{str(j)}'][i]) != '' and str(df_addSmtAssy[f'ROW{str(j)}'][i]) != 'nan':
                                     rowCnt = j
                                 else:
+
                                     break
                             smtFlag = False    
                             minCnt = 9999
@@ -1302,17 +1364,54 @@ class Ui_MainWindow(QMainWindow):
 
                 dict_capableCnt = defaultdict(list) #모델 : 공수
                 dict_firstMaxCnt = defaultdict(list) #1차_MAX_그룹 : 1차_MAX
-                dict_secondMaxCnt = defaultdict(list) #2차_MAX_그룹 : 2차_MAX   
-                dict_module = defaultdict(list)        
-                module_loading = spOrderCnt #모듈 착공 필요 수량(사용자 기입)
+                dict_secondMaxCnt = defaultdict(list) #2차_MAX_그룹 : 2차_MAX
+                dict_module = defaultdict(list) #모델 : 구분 
+                dict_modelFirstGr = defaultdict(list) # 모델 : 1차_MAX_그룹
+                dict_secondMaxGr = defaultdict(list) # 모델 : 2차_MAX_그룹
+                module_loading = float(self.spOrderinput.text()) #모듈 착공 필요 수량(사용자 기입)
                 notmodule_loading =  float(self.spOrderinput.text())  #비모듈 착공 필요 수량(사용자 기입)
 
+                #딕셔너리 설정
                 for i in df_condition.index:
                     dict_capableCnt[df_condition['MODEL'][i]] = df_condition['공수'][i]
-                    dict_firstMaxCnt[df_condition['MODEL'][i]] = df_condition['1차_MAX'][i]
-                    dict_secondMaxCnt[df_condition['MODEL'][i]] = df_condition['2차_MAX'][i]
-                    dict_module[df_condition['MODEL'][i]] = df_condition['구분'][i]
-                #df_ass
+                    dict_firstMaxCnt[df_condition['1차_MAX_그룹'][i]] = df_condition['1차_MAX'][i]
+                    dict_secondMaxCnt[df_condition['2차_MAX_그룹'][i]] = df_condition['2차_MAX'][i]
+                    dict_module[df_condition['MODEL'][i]] = df_condition['구분'][i] #모듈, 비모듈 구분 용도
+                    dict_modelFirstGr[df_condition['MODEL'][i]] = df_condition['1차_MAX_그룹'][i] #모델 : 1차 그룹 매칭 용도
+                    dict_secondMaxGr[df_addSmtAssy['MODEL'][i]] = df_condition['2차_MAX_그룹'][i] #모델 : 2차 그룹 매칭 용도
+                
+
+                #flow 수정
+                for i in df_addSmtAssy.index:
+                    if df_addSmtAssy['긴급오더'][i] == '대상':
+                        if df_addSmtAssy['MODEL'][i] in dict_module.keys(): #기종분류표에 model이 있는가
+                            if type(dict_secondMaxCnt[dict_secondMaxGr[df_addSmtAssy['MODEL'][i]]]) == type(0): #2차 max값이 있는가
+                                if type(dict_firstMaxCnt[dict_modelFirstGr[df_condition['MODEL'][i]]]) == type(0): #1차 max값이 있는가
+                                    if module_loading - df_addSmtAssy['미착공수주잔'][i] * dict_capableCnt[df_condition['MODEL'][i]] > 0: #최대 착공량 -(미착공 수주량*공수) > 0
+                                        if dict_secondMaxCnt[dict_secondMaxGr[df_addSmtAssy['MODEL'][i]]] - df_addSmtAssy['미착공수주잔'][i] >= 0: #2차 max - 미착공수주량 >= 0
+                                            dict_secondMaxCnt[dict_secondMaxGr[df_addSmtAssy['MODEL'][i]]] -= df_addSmtAssy['미착공수주잔'][i]
+                                            dict_firstMaxCnt[dict_modelFirstGr[df_condition['MODEL'][i]]] -= df_addSmtAssy['미착공수주잔'][i]
+                                            if dict_firstMaxCnt[dict_modelFirstGr[df_condition['MODEL'][i]]] > 0: #1차 MAX > 0
+                                                module_loading -= df_addSmtAssy['미착공수주잔'][i] #최대 착공량 -= 미착공 수주량[i]
+                                                df_addSmtAssy['착공 확정수량'] = df_addSmtAssy['미착공수주잔'][i] #확정 수량[i] = 미착공 수주량
+                                            else:
+                                                module_loading -= df_addSmtAssy['미착공수주잔'][i] #최대 착공량 -= 미착공수주량
+                                                df_addSmtAssy['착공 확정수량'] = df_addSmtAssy['미착공수주잔'][i]
+                                                #알람처리
+                                        else:
+                                            dict_secondMaxCnt[dict_secondMaxGr[df_addSmtAssy['MODEL'][i]]] -= df_addSmtAssy['미착공수주잔'][i]
+                                            dict_firstMaxCnt[dict_modelFirstGr[df_condition['MODEL'][i]]] -= df_addSmtAssy['미착공수주잔'][i]
+                                            if dict_firstMaxCnt[dict_modelFirstGr[df_condition['MODEL'][i]]] > 0: #1차 MAX > 0
+                                    else:
+                                else:
+                            else:
+                        else:
+
+                    else:
+
+
+                
+                #수정전
                 for i in df_addSmtAssy.index:
                     if module_loading == 0:
                         break
@@ -1322,17 +1421,17 @@ class Ui_MainWindow(QMainWindow):
                                 if type(dict_secondMaxCnt[df_addSmtAssy['MODEL'][i]]) == type(0): #2ck_max가 - 일때 error
                                     if module_loading > df_addSmtAssy['SMT반영_착공량'][i]:#s
                                         if dict_secondMaxCnt[df_addSmtAssy['MODEL'][i]] > df_addSmtAssy['SMT반영_착공량'][i]: #* dict_capableCnt[df_addSmtAssy['MODEL'][i]]:
-                                            if dict_firstMaxCnt[df_condition['MODEL'][i]] > df_addSmtAssy['SMT반영_착공량'][i]: #* dict_capableCnt[df_addSmtAssy['MODEL'][i]]: #smt 반영 착공량
+                                            if dict_firstMaxCnt[df_addSmtAssy['MODEL'][i]] > df_addSmtAssy['SMT반영_착공량'][i]: #* dict_capableCnt[df_addSmtAssy['MODEL'][i]]: #smt 반영 착공량
                                                 df_addSmtAssy['착공 확정수량'][i] = df_addSmtAssy['SMT반영_착공량'][i]
                                                 dict_secondMaxCnt[df_addSmtAssy['MODEL'][i]] -= df_addSmtAssy['SMT반영_착공량'][i]
-                                                dict_firstMaxCnt[df_condition['MODEL'][i]] -= df_addSmtAssy['SMT반영_착공량'][i]
+                                                dict_firstMaxCnt[df_addSmtAssy['MODEL'][i]] -= df_addSmtAssy['SMT반영_착공량'][i]
                                                 module_loading -= df_addSmtAssy['착공 확정수량'][i]
-                                            elif dict_firstMaxCnt[df_condition['MODEL'][i]] == 0:
+                                            elif dict_firstMaxCnt[df_addSmtAssy['MODEL'][i]] == 0:
                                                 continue
                                             else:
-                                                df_addSmtAssy['착공 확정수량'][i] = dict_firstMaxCnt[df_condition['MODEL'][i]]
-                                                dict_secondMaxCnt[df_addSmtAssy['MODEL'][i]] -= dict_firstMaxCnt[df_condition['MODEL'][i]]
-                                                dict_firstMaxCnt[df_condition['MODEL'][i]] = 0
+                                                df_addSmtAssy['착공 확정수량'][i] = dict_firstMaxCnt[df_addSmtAssy['MODEL'][i]]
+                                                dict_secondMaxCnt[df_addSmtAssy['MODEL'][i]] -= dict_firstMaxCnt[df_addSmtAssy['MODEL'][i]]
+                                                dict_firstMaxCnt[df_addSmtAssy['MODEL'][i]] = 0
                                                 module_loading -= df_addSmtAssy['착공 확정수량'][i]
                                         elif dict_secondMaxCnt[df_addSmtAssy['MODEL'][i]] == 0:
                                             continue
@@ -1352,17 +1451,17 @@ class Ui_MainWindow(QMainWindow):
                                 if type(dict_secondMaxCnt[df_addSmtAssy['MODEL'][i]]) == type(0): #2ck_max가 - 일때 error
                                     if module_loading > df_addSmtAssy['SMT반영_착공량'][i]:#s
                                         if dict_secondMaxCnt[df_addSmtAssy['MODEL'][i]] > df_addSmtAssy['SMT반영_착공량'][i] * dict_capableCnt[df_addSmtAssy['MODEL'][i]]:
-                                            if dict_firstMaxCnt[df_condition['MODEL'][i]] > df_addSmtAssy['SMT반영_착공량'][i] * dict_capableCnt[df_addSmtAssy['MODEL'][i]]: #smt 반영 착공량
+                                            if dict_firstMaxCnt[df_addSmtAssy['MODEL'][i]] > df_addSmtAssy['SMT반영_착공량'][i] * dict_capableCnt[df_addSmtAssy['MODEL'][i]]: #smt 반영 착공량
                                                 df_addSmtAssy['착공 확정수량'][i] = df_addSmtAssy['SMT반영_착공량'][i] * dict_capableCnt[df_addSmtAssy['MODEL'][i]]
                                                 dict_secondMaxCnt[df_addSmtAssy['MODEL'][i]] -= df_addSmtAssy['SMT반영_착공량'][i] * dict_capableCnt[df_addSmtAssy['MODEL'][i]]
-                                                dict_firstMaxCnt[df_condition['MODEL'][i]] -= df_addSmtAssy['SMT반영_착공량'][i] * dict_capableCnt[df_addSmtAssy['MODEL'][i]]
+                                                dict_firstMaxCnt[df_addSmtAssy['MODEL'][i]] -= df_addSmtAssy['SMT반영_착공량'][i] * dict_capableCnt[df_addSmtAssy['MODEL'][i]]
                                                 module_loading -= df_addSmtAssy['착공 확정수량'][i]
-                                            elif dict_firstMaxCnt[df_condition['MODEL'][i]] == 0:
+                                            elif dict_firstMaxCnt[df_addSmtAssy['MODEL'][i]] == 0:
                                                 continue
                                             else:
-                                                df_addSmtAssy['착공 확정수량'][i] = dict_firstMaxCnt[df_condition['MODEL'][i]]
-                                                dict_secondMaxCnt[df_addSmtAssy['MODEL'][i]] -= dict_firstMaxCnt[df_condition['MODEL'][i]]
-                                                dict_firstMaxCnt[df_condition['MODEL'][i]] = 0
+                                                df_addSmtAssy['착공 확정수량'][i] = dict_firstMaxCnt[df_addSmtAssy['MODEL'][i]]
+                                                dict_secondMaxCnt[df_addSmtAssy['MODEL'][i]] -= dict_firstMaxCnt[df_addSmtAssy['MODEL'][i]]
+                                                dict_firstMaxCnt[df_addSmtAssy['MODEL'][i]] = 0
                                                 module_loading -= df_addSmtAssy['착공 확정수량'][i]
                                         elif dict_secondMaxCnt[df_addSmtAssy['MODEL'][i]] == 0:
                                             continue
@@ -1385,59 +1484,43 @@ class Ui_MainWindow(QMainWindow):
                                     df_addSmtAssy['착공 확정수량'][i] = df_addSmtAssy['SMT반영_착공량'][i]
                                     module_loading = remained
                                 else:
-                                    df_addSmtAssy['착공 확정수량'][i] = module_loading
+                                    df_addSmtAssy['착공 확정수량'][i] = module_loading 
+                                    df_addSmtAssy['SMT반영_잔여_착공량'][i] += df_addSmtAssy['SMT반영_착공량'][i] - module_loading
                                     module_loading = 0
-                        
 
+                df_SMT_Alarm = df_SMT_Alarm.drop_duplicates(subset=['검사호기','분류','Message','MS CODE','SMT ASSY'],keep='last')
+                df_Spcf_Alarm = df_Spcf_Alarm.drop_duplicates(subset=['분류','L/N','MS CODE','완성예정일'],keep='last')
+                df_addSmtAssyPower = df_addSmtAssyPower.reset_index(drop=True)
+                df_SMT_Alarm = df_SMT_Alarm.sort_values(by=['분류',
+                                                            '수량'],
+                                                            ascending=[True,
+                                                                        True])
+                df_Spcf_Alarm = df_Spcf_Alarm.sort_values(by=['분류',
+                                                                '완성예정일',
+                                                                'MS CODE',
+                                                                'SMT ASSY'],
+                                                                ascending=[True,
+                                                                            True,
+                                                                            True,
+                                                                            True])
+                #알람 출력
+                df_SMT_Alarm = df_SMT_Alarm.reset_index(drop=True)
+                df_SMT_Alarm.index = df_SMT_Alarm.index+1
+                df_Spcf_Alarm = df_Spcf_Alarm.reset_index(drop=True)
+                df_Spcf_Alarm.index = df_Spcf_Alarm.index+1
+                df_explain = pd.DataFrame({'분류': ['1','2','기타','폴더','파일명'] ,
+                                            '분류별 상황' : ['DB상의 Smt Assy가 부족하여 해당 MS-Code를 착공 내릴 수 없는 경우',
+                                                            '당일 착공분(or 긴급착공분)에 대해 검사설비 능력이 부족할 경우',
+                                                            'MS-Code와 일치하는 Smt Assy가 마스터 파일에 없는 경우',
+                                                            'output ➡ alarm',
+                                                            'FAM3_AlarmList_20221028_시분초']})
+                Alarmdate = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                writer = pd.ExcelWriter('.\\input\\AlarmList_Power\\FAM3_AlarmList_test.xlsx',engine='xlsxwriter')
+                df_SMT_Alarm.to_excel(writer,sheet_name='정리')
+                df_Spcf_Alarm.to_excel(writer,sheet_name='상세')
+                df_explain.to_excel(writer,sheet_name='설명')
+                writer.save()       
 
-
-
-
-
-
-
-
-                    for j in df_condition.index:
-                        if df_condition['MODEL'][j] in df_addSmtAssy['MODEL'][i]:  #모듈, 비모듈 구분 
-                            if df_condition['구분'][j] == '모듈': #기종분류표에 해당되는 모듈인지 확인(비해당은 별도로 착공)
-                                if str(df_condition['1차_MAX_그룹'][j]) != '-': #j가 어디에 있는지 알아야한다. #F3NC32, F3NC34 같은 특이 CASE 분류
-                                    if str(df_condition['2차_MAX_그룹'][j]) != '-': #1차, 2차 MAX가 전부 있는 경우 분류(비해당은 1차MAX만 있는거임)
-                                        if int(dict_secondMaxCnt[df_con]) > 0: #2차 MAX(큰방)를 초과하는지 확인, 여유가 있을경우에 착공 가능,
-                                            if df_addSmtAssy['SMT반영_착공량'][i]
-
-
-                                         
-
-
-
-
-                
-                # 기종 분류표에 있는 경우 먼저
-                for i in df_addSmtAssy.index:
-                    for j in range(0,k): # df_con
-                        if df_condition['MODEL'][j] in df_addSmtAssy['대표모델'][i]: #
-                            if dict_secondMaxCnt[df_condition['No'][i]] > 0:
-                                if dict_firstMaxCnt[df_condition['No'][i]] > 0: #else는 first, second 전부 0
-                                    if dict_secondMaxCnt[df_condition['No'][i]] > dict_firstMaxCnt[df_condition['No'][i]]: #뭔가 이상함 1차와 2차가 같아지면
-                                        if dict_firstMaxCnt[df_condition['No'][i]] > df_addSmtAssy['SMT반영_착공량'][i]:
-                                            dict_firstMaxCnt[df_condition['No'][i]] -= df_addSmtAssy['SMT반영_착공량'][i]
-                                            df_addSmtAssy['착공 확정수량'] = df_addSmtAssy['SMT반영_착공량'][i]
-                                        else:
-                                            df_addSmtAssy['착공 확정수량'] = dict_firstMaxCnt[df_condition['No'][i]]
-                                            dict_firstMaxCnt[df_condition['No'][i]] = 0
-                                            dict_secondMaxCnt[df_condition['No'][i]] = 0
-                                    else:
-                                        if dict_secondMaxCnt[df_condition['No'][i]] > df_addSmtAssy['SMT반영_착공량'][i]:
-                                            dict_firstMaxCnt[df_condition['No'][i]] -= df_addSmtAssy['SMT반영_착공량'][i] #
-                                            dict_secondMaxCnt[df_condition['No'][i]] -= df_addSmtAssy['SMT반영_착공량'][i]
-                                            df_addSmtAssy['착공 확정수량'] = dict_firstMaxCnt[df_condition['No'][i]]
-                                            df_addSmtAssy['착공 확정수량'] = dict_secondMaxCnt[df_condition['No'][i]]
-                                        else:
-                                            df_addSmtAssy['착공 확정수량'] = dict_secondMaxCnt[df_condition['No'][i]]
-                                            dict_secondMaxCnt[df_condition['No'][i]] = 0
-                                else:
-                                    dict_secondMaxCnt[df_condition['No'][i]] = 0
-                                    dict_firstMaxCnt[df_condition['No'][i]] = 0
 
 
 
@@ -1457,4 +1540,3 @@ if __name__ == '__main__':
     import sys
     app = QtWidgets.QApplication(sys.argv)
     ui = Ui_MainWindow()
-    sys.exit(app.exec_())
